@@ -1,5 +1,6 @@
 import json, os
 import requests
+import typing
 from bs4 import BeautifulSoup
 import re
 
@@ -11,6 +12,7 @@ def load_json_file(filename: str) -> list[dict[str, typing.Any]]:
 class Error:
     def __init__(self, message: str):
         self.message = message
+
 
 def download_html(url) -> typing.Union[str, Error]:
     try:
@@ -25,41 +27,44 @@ def download_html(url) -> typing.Union[str, Error]:
     except requests.exceptions.RequestException as e:
         return Error(f"An error occurred: {e}")
 
-def request_completion_from_local_lm(prompt: str) -> dict[str, str]:
+def request_completion_from_local_llm(prompt: str) -> dict[str, str]:
     pass
 
 # Example usage
-filename = 'test_eights.json'
+filename = 'test.eightks.json'
 text_list = []
 data = load_json_file(filename)
 for i, listing in enumerate(data):
-    url = listing['urls']['url']
+    url = listing['files'][0]['url']
     html = download_html(url)
     if type(html) == Error:
-        print(f"Error downloading html for {url} with message:\n{html.message}")
+        print(f"Error downloading html for {url} with message\n: {html.message}")
     else:
         # Parse the HTML document
         soup = BeautifulSoup(html, 'html.parser')
-        # Find the body content
+
+        # Find the <body> tag
         body = soup.find('body')
-        if body:
-            # Get text content from the body, stripping all HTML tags
+        if body != None:
+            # Get the text content from the body, stripping all HTML tags
             body_text = body.get_text()
             # Remove all newline characters and leading/trailing whitespace
-            body_text = body_text.strip()
+
             # Find the keyword and get the index
             keyword = "item"
             index = body_text.lower().find(keyword)
+            # Check if the keyword exists
             if index != -1:
-                # Check if the keyword exists
                 # Cut off all text before the keyword
                 filtered_text = body_text[index:]
             else:
                 filtered_text = body_text  # if keyword not found, return the whole text
+            
+            print(f"Handling 8-k #{i}")
+            text_list.append(filtered_text)
         else:
-            print(f"Body was not found for {url}")
-            continue  # Skip to the next URL if body is not found
-        text_list.append(filtered_text)
+            print(f"Body was not found for 8-k #{i}")
 
-with open('output.json', 'w', encoding='utf-8') as file:
+with open("output.json", 'w', encoding='utf-8') as file:
     json.dump(text_list, file, indent=4)
+
