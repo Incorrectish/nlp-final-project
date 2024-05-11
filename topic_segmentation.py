@@ -2,10 +2,9 @@ from sentence_transformers import SentenceTransformer
 import nltk
 import json
 from nltk.tokenize import PunktSentenceTokenizer
-from numpy.linalg import norm
+from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 nltk.download('punkt')
-
 
 def tokenize_to_sents(text: str) -> str:
     tokenizer = PunktSentenceTokenizer()
@@ -14,14 +13,13 @@ def tokenize_to_sents(text: str) -> str:
 
 # test method
 def load(file_path) -> list[str]:
+    # Open and load the JSON file
     with open(file_path, 'r') as file:
         data = json.load(file)
         return data
 
 def cosine_sim(vec1, vec2):
-    if norm(vec1) == 0 or norm(vec2) == 0:
-        return 0.0  # Handle zero-length vectors
-    return np.dot(vec1, vec2) / (norm(vec1) * norm(vec2))
+    return cosine_similarity(vec1.reshape(1, -1), vec2.reshape(1, -1))[0][0]
 
 # calc scores for each boundary as specified in the papers for texttiling
 def calculate_scores(embeddings, context_size=1):
@@ -29,77 +27,74 @@ def calculate_scores(embeddings, context_size=1):
     scores = []
     n = len(embeddings)
 
-    for i in range(0, n-1):
+    for i in range(1, n):
         # Get left context: ensure you don't go beyond the start of the list
-        left_start = max(0, i - w + 1)
+        left_start = max(0, i - w)
         left_context = embeddings[left_start:i]
         
         # Get right context: ensure you don't go beyond the end of the list
         right_end = min(n, i + w)
-        right_context = embeddings[i+1:right_end]
+        right_context = embeddings[i:right_end]
         
-        # Calculate the average embedding for left and right contexts
+        # calc the average embedding for left and right contexts
         left_avg = np.mean(left_context, axis=0)
         right_avg = np.mean(right_context, axis=0)
         
-        # Calculate cosine similarity between the averages of left and right contexts
+        # calc cosine similarity between the averages of left and right contexts
         score = cosine_sim(left_avg, right_avg)
         
-        # Append the score
         scores.append(score)
-    print("GOT SCORES GOT SCORES")
     return scores
 
-# Function to find the leftmost peak for a given index
-def find_left_peak(scores, start):
-    # Starting from the current position, go left until you find a peak or reach the beginning
-    for i in range(start - 1, -1, -1):
-        if i == 0 or (scores[i - 1] < scores[i] > scores[i + 1]):
-            return scores[i]
-    # If no valid peak found, return zero (or some baseline value)
-    scores[start - 1]
-
-# Function to find the rightmost peak for a given index
-def find_right_peak(scores, start):
-    n = len(scores)
-    # Starting from the current position, go right until you find a peak or reach the end
-    for i in range(start + 1, n):
-        if i == n - 1 or (scores[i - 1] < scores[i] > scores[i + 1]):
-            return scores[i]
-    scores[start]
-
-# Function to calculate the depth scores for all boundary positions
+# DEPTH SCORESSSSS
 def calculate_depth_scores(scores):
     depth_scores = []
-    n = len(scores)
 
-    # Calculate depth score for each position, even at the boundaries
-    for i in range(n):
-        left_peak = find_left_peak(scores, i)
-        right_peak = find_right_peak(scores, i)
-
-        # Calculate the depth score using the specified formula
-        depth_score = 0.5 * (left_peak + right_peak - 2 * scores[i])
+    for i in range(len(scores)):
+        score_i = scores[i]
+        
+        # Find left peak score
+        score_l = None
+        for l in range(i-1, -1, -1):
+            if l >= 0 and scores[l-1] < scores[l] > scores[l+1]:
+                score_l = scores[l]
+                break
+        
+        # Find right peak score
+        score_r = None
+        for r in range(i+1, len(scores)):
+            if r < len(scores) and scores[r-1] < scores[r] > scores[r+1]:
+                score_r = scores[r]
+                break
+        
+        # calc depth score
+        depth_score = ((score_l if score_l is not None else 0) + (score_r if score_r is not None else 0) - 2 * score_i) / 2
         depth_scores.append(depth_score)
 
     return depth_scores
-    
 
 input = tokenize_to_sents(load('output.json')[0])
 
-input = ["Good evening and thank you for joining us.", "We have a great show for you tonight ladies and gentlemen", "But before we dive into that lets discuss the elephant in the room that is the upcoming election."]
 sbert = SentenceTransformer("all-MiniLM-L6-v2")
 
 embeddings = sbert.encode(input)
 
 scores = calculate_scores(embeddings, 1)
 depth_scores = calculate_depth_scores(scores)
-print(len(depth_scores))
 
-for i, sentence in enumerate(input):
-    if i < len(input) - 1:
-        print(sentence, depth_scores[i])
-    else:
-        print(sentence)
+boundary_indeces = []
+threshold = .35
+
+# for each depth score that is greater than the threshold, that index is a topic boundary
+for i, val in enumerate(depth_scores):
+    if val > threshold:
+        boundary_indeces.append(i)
+
+with open('segments.txt', 'w') as f:
+
+    for i, sentence in enumerate(input):
+        print(sentence, file=f)
+        if(i in boundary_indeces):
+            print("\n============+++BOUNDARY+++==============================\n", file=f)
 
 
