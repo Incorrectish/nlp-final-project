@@ -9,10 +9,17 @@ def main():
     with open(filename, "r") as html_file:
         file_text = html_file.read()
         filtered_text = fetch_data.filter_html(file_text)
-        summary = summarize.summarize(filtered_text)
-        paragraph_sentiment = sentiment.sentiment(filtered_text)
         # output is in segments.txt
-        topic_segmentation.topic_segmentation(filtered_text)
+        topics = topic_segmentation.topic_segmentation(filtered_text)
+        for topic in topics:
+            print(f"Topic: {topic}")
+            print("---------")
+            summary = summarize.summarize(topic)
+            print(f"Summary: {summary}")
+            print("---------")
+            topic_sentiment = sentiment.sentiment(topic)
+            print(f"Sentiment: {topic_sentiment[0]}")
+            print("=================================================")
 
 
 if __name__ == "__main__":

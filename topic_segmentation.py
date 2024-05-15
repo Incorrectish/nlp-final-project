@@ -73,8 +73,8 @@ def calculate_depth_scores(scores):
 
     return depth_scores
 
-# output of segmentation is written to segments.txt
-def topic_segmentation(input: str):
+# returns a list of the topics
+def topic_segmentation(input: str) -> list[str]:
     sbert = SentenceTransformer("all-MiniLM-L6-v2")
 
     embeddings = sbert.encode(input)
@@ -90,11 +90,14 @@ def topic_segmentation(input: str):
         if val > threshold:
             boundary_indeces.append(i)
 
-    with open('segments.txt', 'w') as f:
-
-        for i, sentence in enumerate(input):
-            print(sentence, file=f)
-            if(i in boundary_indeces):
-                print("\n============+++BOUNDARY+++==============================\n", file=f)
+    topics = []
+    current_topic = ""
+    for i, sentence in enumerate(input):
+        current_topic += sentence
+        if(i in boundary_indeces):
+            topics += [current_topic]
+            current_topic = []
+    topics += current_topic
+    return topics
 
 
