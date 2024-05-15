@@ -30,6 +30,33 @@ def download_html(url) -> typing.Union[str, Error]:
 def request_completion_from_local_llm(prompt: str) -> dict[str, str]:
     pass
 
+def filter_html(html: str) -> typing.Union[str, Error]:
+    # Parse the HTML document
+    soup = BeautifulSoup(html, 'html.parser')
+
+    # Find the <body> tag
+    body = soup.find('body')
+    if body != None:
+        # Get the text content from the body, stripping all HTML tags
+        body_text = body.get_text()
+        # Remove all newline characters and leading/trailing whitespace
+
+        # Find the keyword and get the index
+        keyword = "item"
+        index = body_text.lower().find(keyword)
+        # Check if the keyword exists
+        if index != -1:
+            # Cut off all text before the keyword
+            filtered_text = body_text[index:]
+        else:
+            filtered_text = body_text  # if keyword not found, return the whole text
+        
+        print(f"Handling 8-k #{i}")
+        return filtered_text
+    else:
+        print(f"Body was not found for 8-k #{i}")
+        return Error(f"Body was not found for 8-k #{i}")
+
 # Example usage
 filename = 'test.eightks.json'
 text_list = []
@@ -40,30 +67,10 @@ for i, listing in enumerate(data):
     if type(html) == Error:
         print(f"Error downloading html for {url} with message\n: {html.message}")
     else:
-        # Parse the HTML document
-        soup = BeautifulSoup(html, 'html.parser')
-
-        # Find the <body> tag
-        body = soup.find('body')
-        if body != None:
-            # Get the text content from the body, stripping all HTML tags
-            body_text = body.get_text()
-            # Remove all newline characters and leading/trailing whitespace
-
-            # Find the keyword and get the index
-            keyword = "item"
-            index = body_text.lower().find(keyword)
-            # Check if the keyword exists
-            if index != -1:
-                # Cut off all text before the keyword
-                filtered_text = body_text[index:]
-            else:
-                filtered_text = body_text  # if keyword not found, return the whole text
-            
-            print(f"Handling 8-k #{i}")
+        assert type(html) == str
+        filtered_text = filter_html(html)
+        if type(filtered_text) != Error:
             text_list.append(filtered_text)
-        else:
-            print(f"Body was not found for 8-k #{i}")
 
 with open("output.json", 'w', encoding='utf-8') as file:
     json.dump(text_list, file, indent=4)

@@ -5,44 +5,43 @@ import json
 
 print('finished imports')
 
-model = "tiiuae/falcon-7b" 
-device = 'cuda'
+def sentiment(text: str) -> str: 
+    model = "tiiuae/falcon-7b" 
+    device = 'cuda'
 
-if not torch.cuda.is_available():
-    print('CUDA is not available, make sure you have GPU')
-    exit(1)
+    if not torch.cuda.is_available():
+        print('CUDA is not available, make sure you have GPU')
+        exit(1)
 
-tokenizer = AutoTokenizer.from_pretrained(model)
+    tokenizer = AutoTokenizer.from_pretrained(model)
 # loaded tokenizer
-pipeline = transformers.pipeline(
-    "text-generation",
-    model=model,
-    tokenizer=tokenizer,
-    torch_dtype=torch.bfloat16,
-    # torch_dtype=torch.float8,
-    # trust_remote_code=True,
-    trust_remote_code=False,
-    device=device,
-)
+    pipeline = transformers.pipeline(
+        "text-generation",
+        model=model,
+        tokenizer=tokenizer,
+        torch_dtype=torch.bfloat16,
+        # torch_dtype=torch.float8,
+        # trust_remote_code=True,
+        trust_remote_code=False,
+        device=device,
+    )
 
-print('initialized pipeline')
+    print('initialized pipeline')
 
 # read in data from json file
-filename = 'output.json'
-with open(filename,'r') as file:
-    data = json.load(file)
+    # filename = 'output.json'
+    # with open(filename,'r') as file:
+    #     data = json.load(file)
 
 # function to generate sentiment for a single document
-def sentiment_analysis(text):
-    pass
+    def sentiment_analysis(text: str) -> str:
+        pass
 
 # list to store all document's sentiment(positive, neutral, negative)
-sentiment_labels = []
 
 # extract out sentiment for each document
-for i,document in enumerate(data):
     sequences = pipeline(
-        "Determine rather the following document is describing a positive, neutral, or a negative event or outcome: " + document,
+        "Determine rather the following document is describing a positive, neutral, or a negative event or outcome: " + text,
         max_length=200,
         do_sample=True,
         top_k=10,
@@ -51,7 +50,7 @@ for i,document in enumerate(data):
     )
     generated_text = sequences[0]['generated_text']
     sentiment = sentiment_analysis(generated_text)
-    sentiment_labels.append(sentiment)
+    return sentiment
 
 
 '''
