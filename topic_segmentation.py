@@ -73,28 +73,28 @@ def calculate_depth_scores(scores):
 
     return depth_scores
 
-input = tokenize_to_sents(load('output.json')[0])
+# output of segmentation is written to segments.txt
+def topic_segmentation(input: str):
+    sbert = SentenceTransformer("all-MiniLM-L6-v2")
 
-sbert = SentenceTransformer("all-MiniLM-L6-v2")
+    embeddings = sbert.encode(input)
 
-embeddings = sbert.encode(input)
+    scores = calculate_scores(embeddings, 1)
+    depth_scores = calculate_depth_scores(scores)
 
-scores = calculate_scores(embeddings, 1)
-depth_scores = calculate_depth_scores(scores)
-
-boundary_indeces = []
-threshold = .35
+    boundary_indeces = []
+    threshold = .35
 
 # for each depth score that is greater than the threshold, that index is a topic boundary
-for i, val in enumerate(depth_scores):
-    if val > threshold:
-        boundary_indeces.append(i)
+    for i, val in enumerate(depth_scores):
+        if val > threshold:
+            boundary_indeces.append(i)
 
-with open('segments.txt', 'w') as f:
+    with open('segments.txt', 'w') as f:
 
-    for i, sentence in enumerate(input):
-        print(sentence, file=f)
-        if(i in boundary_indeces):
-            print("\n============+++BOUNDARY+++==============================\n", file=f)
+        for i, sentence in enumerate(input):
+            print(sentence, file=f)
+            if(i in boundary_indeces):
+                print("\n============+++BOUNDARY+++==============================\n", file=f)
 
 
