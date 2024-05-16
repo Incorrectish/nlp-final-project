@@ -62,7 +62,7 @@ def calculate_depth_scores(scores):
         
         # Find right peak score
         score_r = None
-        for r in range(i+1, len(scores)):
+        for r in range(i+1, len(scores)-1):
             if r < len(scores) and scores[r-1] < scores[r] > scores[r+1]:
                 score_r = scores[r]
                 break
