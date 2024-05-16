@@ -76,7 +76,7 @@ def calculate_depth_scores(scores):
 # returns a list of the topics
 def topic_segmentation(input: str) -> list[str]:
     sbert = SentenceTransformer("all-MiniLM-L6-v2")
-
+    input = tokenize_to_sents(input)
     embeddings = sbert.encode(input)
 
     scores = calculate_scores(embeddings, 1)
@@ -95,9 +95,9 @@ def topic_segmentation(input: str) -> list[str]:
     for i, sentence in enumerate(input):
         current_topic += sentence
         if(i in boundary_indeces):
-            topics += [current_topic]
-            current_topic = []
-    topics += current_topic
+            topics.append(current_topic)
+            current_topic = ""
+    topics.append(current_topic)
     return topics
 
 
