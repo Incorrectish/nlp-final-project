@@ -51,27 +51,27 @@ def filter_html(html: str) -> typing.Union[str, Error]:
         else:
             filtered_text = body_text  # if keyword not found, return the whole text
         
-        print(f"Handling 8-k #{i}")
         return filtered_text
     else:
-        print(f"Body was not found for 8-k #{i}")
-        return Error(f"Body was not found for 8-k #{i}")
+        print(f"Body was not found for 8-k #")
+        return Error(f"Body was not found for 8-k #")
 
 # Example usage
-filename = 'test.eightks.json'
-text_list = []
-data = load_json_file(filename)
-for i, listing in enumerate(data):
-    url = listing['files'][0]['url']
-    html = download_html(url)
-    if type(html) == Error:
-        print(f"Error downloading html for {url} with message\n: {html.message}")
-    else:
-        assert type(html) == str
-        filtered_text = filter_html(html)
-        if type(filtered_text) != Error:
-            text_list.append(filtered_text)
+def example(): 
+    filename = 'test.eightks.json'
+    text_list = []
+    data = load_json_file(filename)
+    for i, listing in enumerate(data):
+        url = listing['files'][0]['url']
+        html = download_html(url)
+        if type(html) == Error:
+            print(f"Error downloading html for {url} with message\n: {html.message}")
+        else:
+            assert type(html) == str
+            filtered_text = filter_html(html)
+            if type(filtered_text) != Error:
+                text_list.append(filtered_text)
 
-with open("output.json", 'w', encoding='utf-8') as file:
-    json.dump(text_list, file, indent=4)
+    with open("output.json", 'w', encoding='utf-8') as file:
+        json.dump(text_list, file, indent=4)
 
